@@ -1,0 +1,15 @@
+# ML Service dependencies.
+# FastAPI + Uvicorn provide the web framework and ASGI server.
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Data handling and model persistence.
+pandas==2.2.3
+numpy==2.1.3
+joblib==1.4.2
+
+# Machine learning.
+scikit-learn==1.5.2
+
+# HTTP client used only during development/testing.
+httpx==0.27.2

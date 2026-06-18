@@ -1,0 +1,7 @@
+# Python backend dependencies for the Property Value Estimator app.
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.13.4
+
+# Async HTTP client used to call the ml-service.
+httpx==0.27.2

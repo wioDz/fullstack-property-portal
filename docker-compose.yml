@@ -1,0 +1,89 @@
+# Docker Compose orchestration for the fullstack interview project.
+# All four services share a bridge network so they can reach each other by service name.
+
+services:
+  # Task 1: ML model service. Owns the trained regression model.
+  ml-service:
+    build:
+      context: ./services/ml-service
+      dockerfile: Dockerfile
+    container_name: interview-ml-service
+    ports:
+      - "8001:8001"
+    volumes:
+      # Mount the provided CSV files read-only so the service can train if needed.
+      - ./data:/app/data:ro
+      # Named volume to persist trained model artifacts between restarts.
+      - ml-models:/app/models
+    environment:
+      - PORT=8001
+      - DATA_PATH=/app/data/housing_train.csv
+    healthcheck:
+      # Wait until the model is trained and loaded before marking healthy.
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:8001/model-info >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - interview-network
+
+  # App 1 backend: Property Value Estimator (Python/FastAPI).
+  python-backend:
+    build:
+      context: ./services/python-backend
+      dockerfile: Dockerfile
+    container_name: interview-python-backend
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - ML_SERVICE_URL=http://ml-service:8001
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    networks:
+      - interview-network
+
+  # App 2 backend: Property Market Analysis (Java/Spring Boot).
+  java-backend:
+    build:
+      context: ./services/java-backend
+      dockerfile: Dockerfile
+    container_name: interview-java-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - ML_SERVICE_URL=http://ml-service:8001
+      - DATA_PATH=/app/data/housing_train.csv
+    volumes:
+      - ./data:/app/data:ro
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    networks:
+      - interview-network
+
+  # Unified Next.js portal frontend.
+  portal:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+    container_name: interview-portal
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - PYTHON_BACKEND_URL=http://python-backend:8002
+      - JAVA_BACKEND_URL=http://java-backend:8080
+    depends_on:
+      - python-backend
+      - java-backend
+    networks:
+      - interview-network
+
+volumes:
+  ml-models:
+
+networks:
+  interview-network:
+    driver: bridge
