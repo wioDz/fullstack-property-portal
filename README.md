@@ -137,6 +137,20 @@ curl -X POST http://localhost:3000/api/estimator/predictions \
 curl http://localhost:3000/api/market/statistics
 ```
 
+## Publishing to GitHub
+
+A local git repository is already initialized with two commits. To publish:
+
+1. Create a public repository named `fullstack-interview-property-portal` on GitHub.
+2. Update the remote URL if your username differs:
+   ```bash
+   git remote set-url origin https://github.com/YOUR_USERNAME/fullstack-interview-property-portal.git
+   ```
+3. Push:
+   ```bash
+   git push -u origin master
+   ```
+
 ## Notes
 
 - The ML model is trained at container startup if `model.pkl` is not present in the mounted model volume.
