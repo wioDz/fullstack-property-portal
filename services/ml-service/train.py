@@ -69,8 +69,10 @@ def train_model(df: pd.DataFrame):
         X, y, test_size=0.2, random_state=42
     )
 
-    # Scale features so coefficients are on a comparable scale and the model
-    # converges reliably.
+    # Scale features to zero mean and unit variance. Linear regression is
+    # sensitive to feature scales (e.g. square_footage is thousands, school_rating
+    # is single digits), so scaling improves numerical stability and makes the
+    # learned coefficients comparable.
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)

@@ -5,6 +5,11 @@ import { PredictionRecord } from './types';
 /**
  * Client-side store for estimator history and comparison selection.
  * Persists history to localStorage so it survives page reloads.
+ *
+ * NOTE: Because this store rehydrates from localStorage on the client, any
+ * component that renders persisted state during SSR will cause a hydration
+ * mismatch. In the estimator page the history UI is wrapped in `<ClientOnly>`
+ * so it is only rendered after the browser has mounted.
  */
 interface EstimatorState {
   history: PredictionRecord[];

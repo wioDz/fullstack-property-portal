@@ -54,6 +54,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ClientOnly } from '@/components/ClientOnly';
 import {
   fetchMarketStatistics,
   filterMarketRecords,
@@ -113,6 +114,35 @@ export default function MarketPage() {
     setFilters((prev) => ({ ...prev, [key]: value === '' ? undefined : value }));
   };
 
+  /**
+   * Format a number for a controlled number input so React never receives NaN.
+   * NaN is converted to an empty string; undefined/null falls back to empty.
+   */
+  const numberInputValue = (value: number | undefined | null): string | number => {
+    if (value === undefined || value === null) return '';
+    return Number.isNaN(value) ? '' : value;
+  };
+
+  /**
+   * Parse a string from a filter number input. Empty input clears the filter;
+   * invalid input is ignored by returning undefined.
+   */
+  const parseFilterNumber = (value: string): number | undefined => {
+    if (value === '') return undefined;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  /**
+   * Parse a string from a number input back into a number, falling back to the
+   * previous value if the input is empty or invalid.
+   */
+  const parseNumberOrKeep = (value: string, fallback: number): number => {
+    if (value === '') return fallback;
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? fallback : parsed;
+  };
+
   const bedroomData =
     records?.reduce((acc, r) => {
       const key = `${r.bedrooms} bed`;
@@ -127,7 +157,24 @@ export default function MarketPage() {
     }, [] as { name: string; count: number; avgPrice: number }[]) || [];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <ClientOnly
+      fallback={
+        <div className="mx-auto max-w-7xl space-y-8 p-4">
+          <Skeleton className="h-12 w-1/3" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Skeleton className="h-80" />
+            <Skeleton className="h-80" />
+          </div>
+        </div>
+      }
+    >
+      <div className="mx-auto max-w-7xl space-y-8">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
@@ -207,13 +254,13 @@ export default function MarketPage() {
                   tickFormatter={(v) => `$${v / 1000}k`}
                   tick={{ fontSize: 12 }}
                 />
-                <ZAxis type="number" dataKey="schoolRating" range={[50, 400]} />
+                <ZAxis type="number" dataKey="schoolRating" range={[4, 16]} />
                 <Tooltip
                   cursor={{ strokeDasharray: '3 3' }}
                   formatter={(v: number, n: string) => [n === 'price' ? formatCurrency(v) : v, n]}
                 />
                 <Legend />
-                <Scatter name="Properties" data={records || []} fill="#10b981" />
+                <Scatter name="Properties" data={records || []} fill="hsl(var(--primary))" />
               </ScatterChart>
             </ResponsiveContainer>
           </CardContent>
@@ -235,46 +282,46 @@ export default function MarketPage() {
               <Input
                 type="number"
                 step="0.5"
-                value={filters.minBedrooms ?? ''}
-                onChange={(e) => updateFilter('minBedrooms', e.target.valueAsNumber)}
+                value={numberInputValue(filters.minBedrooms)}
+                onChange={(e) => updateFilter('minBedrooms', parseFilterNumber(e.target.value))}
               />
             </FormField>
             <FormField label="Max Bedrooms">
               <Input
                 type="number"
                 step="0.5"
-                value={filters.maxBedrooms ?? ''}
-                onChange={(e) => updateFilter('maxBedrooms', e.target.valueAsNumber)}
+                value={numberInputValue(filters.maxBedrooms)}
+                onChange={(e) => updateFilter('maxBedrooms', parseFilterNumber(e.target.value))}
               />
             </FormField>
             <FormField label="Min Bathrooms">
               <Input
                 type="number"
                 step="0.5"
-                value={filters.minBathrooms ?? ''}
-                onChange={(e) => updateFilter('minBathrooms', e.target.valueAsNumber)}
+                value={numberInputValue(filters.minBathrooms)}
+                onChange={(e) => updateFilter('minBathrooms', parseFilterNumber(e.target.value))}
               />
             </FormField>
             <FormField label="Max Bathrooms">
               <Input
                 type="number"
                 step="0.5"
-                value={filters.maxBathrooms ?? ''}
-                onChange={(e) => updateFilter('maxBathrooms', e.target.valueAsNumber)}
+                value={numberInputValue(filters.maxBathrooms)}
+                onChange={(e) => updateFilter('maxBathrooms', parseFilterNumber(e.target.value))}
               />
             </FormField>
             <FormField label="Min Year">
               <Input
                 type="number"
-                value={filters.minYearBuilt ?? ''}
-                onChange={(e) => updateFilter('minYearBuilt', e.target.valueAsNumber)}
+                value={numberInputValue(filters.minYearBuilt)}
+                onChange={(e) => updateFilter('minYearBuilt', parseFilterNumber(e.target.value))}
               />
             </FormField>
             <FormField label="Max Year">
               <Input
                 type="number"
-                value={filters.maxYearBuilt ?? ''}
-                onChange={(e) => updateFilter('maxYearBuilt', e.target.valueAsNumber)}
+                value={numberInputValue(filters.maxYearBuilt)}
+                onChange={(e) => updateFilter('maxYearBuilt', parseFilterNumber(e.target.value))}
               />
             </FormField>
             <FormField label="Sort By">
@@ -325,47 +372,52 @@ export default function MarketPage() {
             <FormField label="Square Footage">
               <Input
                 type="number"
-                value={whatIf.square_footage}
-                onChange={(e) => setWhatIf({ ...whatIf, square_footage: e.target.valueAsNumber })}
+                value={numberInputValue(whatIf.square_footage)}
+                onChange={(e) =>
+                  setWhatIf({ ...whatIf, square_footage: parseNumberOrKeep(e.target.value, whatIf.square_footage) })
+                }
               />
             </FormField>
             <FormField label="Bedrooms">
               <Input
                 type="number"
                 step="0.5"
-                value={whatIf.bedrooms}
-                onChange={(e) => setWhatIf({ ...whatIf, bedrooms: e.target.valueAsNumber })}
+                value={numberInputValue(whatIf.bedrooms)}
+                onChange={(e) => setWhatIf({ ...whatIf, bedrooms: parseNumberOrKeep(e.target.value, whatIf.bedrooms) })}
               />
             </FormField>
             <FormField label="Bathrooms">
               <Input
                 type="number"
                 step="0.5"
-                value={whatIf.bathrooms}
-                onChange={(e) => setWhatIf({ ...whatIf, bathrooms: e.target.valueAsNumber })}
+                value={numberInputValue(whatIf.bathrooms)}
+                onChange={(e) => setWhatIf({ ...whatIf, bathrooms: parseNumberOrKeep(e.target.value, whatIf.bathrooms) })}
               />
             </FormField>
             <FormField label="Year Built">
               <Input
                 type="number"
-                value={whatIf.year_built}
-                onChange={(e) => setWhatIf({ ...whatIf, year_built: e.target.valueAsNumber })}
+                value={numberInputValue(whatIf.year_built)}
+                onChange={(e) => setWhatIf({ ...whatIf, year_built: parseNumberOrKeep(e.target.value, whatIf.year_built) })}
               />
             </FormField>
             <FormField label="Lot Size">
               <Input
                 type="number"
-                value={whatIf.lot_size}
-                onChange={(e) => setWhatIf({ ...whatIf, lot_size: e.target.valueAsNumber })}
+                value={numberInputValue(whatIf.lot_size)}
+                onChange={(e) => setWhatIf({ ...whatIf, lot_size: parseNumberOrKeep(e.target.value, whatIf.lot_size) })}
               />
             </FormField>
             <FormField label="Distance to Center">
               <Input
                 type="number"
                 step="0.1"
-                value={whatIf.distance_to_city_center}
+                value={numberInputValue(whatIf.distance_to_city_center)}
                 onChange={(e) =>
-                  setWhatIf({ ...whatIf, distance_to_city_center: e.target.valueAsNumber })
+                  setWhatIf({
+                    ...whatIf,
+                    distance_to_city_center: parseNumberOrKeep(e.target.value, whatIf.distance_to_city_center),
+                  })
                 }
               />
             </FormField>
@@ -373,8 +425,10 @@ export default function MarketPage() {
               <Input
                 type="number"
                 step="0.1"
-                value={whatIf.school_rating}
-                onChange={(e) => setWhatIf({ ...whatIf, school_rating: e.target.valueAsNumber })}
+                value={numberInputValue(whatIf.school_rating)}
+                onChange={(e) =>
+                  setWhatIf({ ...whatIf, school_rating: parseNumberOrKeep(e.target.value, whatIf.school_rating) })
+                }
               />
             </FormField>
           </div>
@@ -478,6 +532,7 @@ export default function MarketPage() {
         </CardContent>
       </Card>
     </div>
+    </ClientOnly>
   );
 }
 

@@ -95,7 +95,14 @@ class HealthResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class ModelState:
-    """Holds the loaded model artifacts in memory for the lifetime of the app."""
+    """
+    Holds the loaded model artifacts in memory for the lifetime of the app.
+
+    The three artifacts are:
+      - model.pkl   : fitted scikit-learn LinearRegression model
+      - scaler.pkl  : fitted StandardScaler used to normalize input features
+      - metadata.json : model metrics, coefficients, and training metadata
+    """
 
     def __init__(self):
         self.model = None

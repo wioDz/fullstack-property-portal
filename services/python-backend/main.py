@@ -6,6 +6,12 @@ and the ML model service. It validates incoming requests, forwards them to
 ml-service, and keeps a lightweight in-memory history of predictions for the
 demo history/comparison features.
 
+Why this layer exists:
+- It isolates the portal from the ML service's URL structure and response shapes.
+- It adds an in-memory history store so users can view and compare past estimates.
+- It provides a stable API contract (the /api/v1 paths below) that the portal
+  and Next.js API routes can rely on even if the ML service changes.
+
 Endpoints:
   GET  /health                     - health check
   POST /api/v1/predictions         - single prediction

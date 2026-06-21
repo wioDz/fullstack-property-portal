@@ -23,6 +23,7 @@ import {
   Square,
   ArrowRightLeft,
 } from 'lucide-react';
+import { ClientOnly } from '@/components/ClientOnly';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -262,91 +263,93 @@ export default function EstimatorPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-              Estimate History
-            </CardTitle>
-            <CardDescription>Select rows to compare predicted prices.</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            {selectedIds.length > 0 && (
-              <Button variant="outline" size="sm" onClick={clearSelection}>
-                Clear Selection
-              </Button>
-            )}
-            <Button variant="secondary" size="sm" onClick={clearHistory}>
-              <Trash2 className="mr-1 h-4 w-4" />
-              Clear
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {history.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground">No estimates yet. Submit the form above to get started.</p>
-          ) : (
-            <>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">Select</TableHead>
-                      <TableHead>Sqft</TableHead>
-                      <TableHead>Beds</TableHead>
-                      <TableHead>Baths</TableHead>
-                      <TableHead>Year</TableHead>
-                      <TableHead>Lot</TableHead>
-                      <TableHead>Dist</TableHead>
-                      <TableHead>School</TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {history.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>
-                          <button
-                            onClick={() => toggleSelection(record.id)}
-                            className="text-primary hover:text-primary/80"
-                            aria-label={selectedIds.includes(record.id) ? 'Deselect' : 'Select'}
-                          >
-                            {selectedIds.includes(record.id) ? (
-                              <CheckSquare className="h-5 w-5" />
-                            ) : (
-                              <Square className="h-5 w-5" />
-                            )}
-                          </button>
-                        </TableCell>
-                        <TableCell>{record.features.square_footage}</TableCell>
-                        <TableCell>{record.features.bedrooms}</TableCell>
-                        <TableCell>{record.features.bathrooms}</TableCell>
-                        <TableCell>{record.features.year_built}</TableCell>
-                        <TableCell>{record.features.lot_size}</TableCell>
-                        <TableCell>{record.features.distance_to_city_center}</TableCell>
-                        <TableCell>{record.features.school_rating}</TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="secondary">{formatCurrency(record.predicted_price)}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="mt-4 flex items-center gap-3">
-                <Button
-                  onClick={handleCompare}
-                  disabled={selectedIds.length < 2 || compareLoading}
-                >
-                  <ArrowRightLeft className="mr-2 h-4 w-4" />
-                  {compareLoading ? 'Comparing...' : `Compare Selected (${selectedIds.length})`}
+      <ClientOnly>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                Estimate History
+              </CardTitle>
+              <CardDescription>Select rows to compare predicted prices.</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              {selectedIds.length > 0 && (
+                <Button variant="outline" size="sm" onClick={clearSelection}>
+                  Clear Selection
                 </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              )}
+              <Button variant="secondary" size="sm" onClick={clearHistory}>
+                <Trash2 className="mr-1 h-4 w-4" />
+                Clear
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {history.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground">No estimates yet. Submit the form above to get started.</p>
+            ) : (
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Select</TableHead>
+                        <TableHead>Sqft</TableHead>
+                        <TableHead>Beds</TableHead>
+                        <TableHead>Baths</TableHead>
+                        <TableHead>Year</TableHead>
+                        <TableHead>Lot</TableHead>
+                        <TableHead>Dist</TableHead>
+                        <TableHead>School</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {history.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell>
+                            <button
+                              onClick={() => toggleSelection(record.id)}
+                              className="text-primary hover:text-primary/80"
+                              aria-label={selectedIds.includes(record.id) ? 'Deselect' : 'Select'}
+                            >
+                              {selectedIds.includes(record.id) ? (
+                                <CheckSquare className="h-5 w-5" />
+                              ) : (
+                                <Square className="h-5 w-5" />
+                              )}
+                            </button>
+                          </TableCell>
+                          <TableCell>{record.features.square_footage}</TableCell>
+                          <TableCell>{record.features.bedrooms}</TableCell>
+                          <TableCell>{record.features.bathrooms}</TableCell>
+                          <TableCell>{record.features.year_built}</TableCell>
+                          <TableCell>{record.features.lot_size}</TableCell>
+                          <TableCell>{record.features.distance_to_city_center}</TableCell>
+                          <TableCell>{record.features.school_rating}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="secondary">{formatCurrency(record.predicted_price)}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <Button
+                    onClick={handleCompare}
+                    disabled={selectedIds.length < 2 || compareLoading}
+                  >
+                    <ArrowRightLeft className="mr-2 h-4 w-4" />
+                    {compareLoading ? 'Comparing...' : `Compare Selected (${selectedIds.length})`}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </ClientOnly>
 
       {compareResult && (
         <Card>

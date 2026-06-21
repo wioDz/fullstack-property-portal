@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Next.js API route proxy for CSV/PDF exports.
- * The [type] segment must be "csv" or "pdf".
+ *
+ * The [type] dynamic segment must be "csv" or "pdf". The route streams the
+ * file bytes back from the Java backend with the correct Content-Type and
+ * Content-Disposition headers so the browser downloads the file.
  */
 export async function GET(
   request: NextRequest,
@@ -14,7 +17,21 @@ export async function GET(
   }
 
   const backendUrl = process.env.JAVA_BACKEND_URL || 'http://localhost:8080';
-  const res = await fetch(`${backendUrl}/api/v1/market/export/${type}`);
+  let res: Response;
+
+  try {
+    res = await fetch(`${backendUrl}/api/v1/market/export/${type}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[proxy] Java backend is unreachable at ${backendUrl}: ${message}`);
+    return NextResponse.json(
+      {
+        error: 'Java backend is unreachable',
+        detail: `Could not connect to ${backendUrl}. Make sure the Java backend is running and JAVA_BACKEND_URL is set correctly.`,
+      },
+      { status: 503 }
+    );
+  }
 
   const contentType = type === 'csv' ? 'text/csv' : 'application/pdf';
   const extension = type === 'csv' ? 'csv' : 'pdf';

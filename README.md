@@ -77,8 +77,12 @@ cd services/ml-service
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python train.py
-uvicorn main:app --reload --port 8001
+
+# Train the model. On Windows use an absolute path or a relative path with forward slashes.
+DATA_PATH=../../data/housing_train.csv MODEL_DIR=./models python train.py
+
+# Start the inference API.
+MODEL_DIR=./models uvicorn main:app --reload --port 8001
 ```
 
 ### 2. Python Backend
@@ -90,7 +94,7 @@ cd services/python-backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8002
+ML_SERVICE_URL=http://localhost:8001 uvicorn main:app --reload --port 8002
 ```
 
 ### 3. Java Backend
@@ -100,7 +104,10 @@ In a new terminal:
 ```bash
 cd services/java-backend
 mvn clean package -DskipTests
-java -jar target/market-analysis-1.0.0.jar
+
+# DATA_PATH points to the CSV dataset; ML_SERVICE_URL points to the running ML service.
+# On Windows use an absolute path or a relative path with forward slashes.
+DATA_PATH=../../data/housing_train.csv ML_SERVICE_URL=http://localhost:8001 java -jar target/market-analysis-1.0.0.jar
 ```
 
 ### 4. Next.js Portal
@@ -110,7 +117,7 @@ In a new terminal:
 ```bash
 cd portal
 npm install
-npm run dev
+PYTHON_BACKEND_URL=http://localhost:8002 JAVA_BACKEND_URL=http://localhost:8080 npm run dev
 ```
 
 Then open http://localhost:3000.
