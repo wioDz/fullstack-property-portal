@@ -1,6 +1,6 @@
-# Fullstack Interview Project
+# Fullstack Property Portal
 
-A containerized fullstack demonstration of a housing price prediction system.
+A containerized fullstack demonstration of a housing price prediction system built with FastAPI, Spring Boot, and Next.js.
 
 ## Overview
 
@@ -148,10 +148,10 @@ curl http://localhost:3000/api/market/statistics
 
 A local git repository is already initialized with two commits. To publish:
 
-1. Create a public repository named `fullstack-interview-property-portal` on GitHub.
+1. Create a public repository named `fullstack-property-portal` on GitHub.
 2. Update the remote URL if your username differs:
    ```bash
-   git remote set-url origin https://github.com/YOUR_USERNAME/fullstack-interview-property-portal.git
+   git remote set-url origin https://github.com/YOUR_USERNAME/fullstack-property-portal.git
    ```
 3. Push:
    ```bash

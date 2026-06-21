@@ -156,7 +156,9 @@ history_store = HistoryStore()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create a reusable async HTTP client at startup."""
-    app.state.http_client = httpx.AsyncClient(base_url=ML_SERVICE_URL, timeout=30.0)
+    # trust_env=False prevents the client from picking up the Windows system proxy
+    # (common in corporate/Clash environments) which breaks calls to localhost.
+    app.state.http_client = httpx.AsyncClient(base_url=ML_SERVICE_URL, timeout=30.0, trust_env=False)
     yield
     await app.state.http_client.aclose()
 
@@ -220,7 +222,8 @@ async def _call_ml_predict_batch(
 async def health():
     """Check that this service can reach the ml-service."""
     try:
-        async with httpx.AsyncClient() as client:
+        # trust_env=False avoids routing health checks through a system proxy.
+        async with httpx.AsyncClient(trust_env=False) as client:
             resp = await client.get(f"{ML_SERVICE_URL}/health", timeout=5.0)
         ml_reachable = resp.status_code == status.HTTP_200_OK
     except Exception:

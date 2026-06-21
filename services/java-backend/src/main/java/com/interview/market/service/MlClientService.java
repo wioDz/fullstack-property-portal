@@ -10,6 +10,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,7 +27,11 @@ public class MlClientService {
     private final String mlServiceUrl;
 
     public MlClientService(@Value("${ml.service.url}") String mlServiceUrl) {
-        this.restTemplate = new RestTemplate();
+        // Disable system proxy so local/backend-to-backend calls are not routed
+        // through a corporate/Clash proxy on the developer machine.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setProxy(java.net.Proxy.NO_PROXY);
+        this.restTemplate = new RestTemplate(factory);
         this.mlServiceUrl = mlServiceUrl.endsWith("/") ? mlServiceUrl.substring(0, mlServiceUrl.length() - 1) : mlServiceUrl;
     }
 
