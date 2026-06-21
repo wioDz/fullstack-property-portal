@@ -43,6 +43,8 @@ Thumbs.db
 # Model artifacts
 *.pkl
 *.joblib
+models/
+!models/.gitkeep
 
 # Data (keep CSVs in repo, but ignore generated outputs)
 data/*.json

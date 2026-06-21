@@ -15,12 +15,45 @@ import {
   ZAxis,
   Legend,
 } from 'recharts';
-import { BarChart3, Filter, Download, Calculator, TrendingUp } from 'lucide-react';
+import {
+  BarChart3,
+  Filter,
+  Download,
+  Calculator,
+  TrendingUp,
+  Home,
+  Layers,
+  Star,
+  Search,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   fetchMarketStatistics,
   filterMarketRecords,
@@ -80,7 +113,6 @@ export default function MarketPage() {
     setFilters((prev) => ({ ...prev, [key]: value === '' ? undefined : value }));
   };
 
-  // Aggregate data for charts: group by bedroom count.
   const bedroomData =
     records?.reduce((acc, r) => {
       const key = `${r.bedrooms} bed`;
@@ -95,50 +127,61 @@ export default function MarketPage() {
     }, [] as { name: string; count: number; avgPrice: number }[]) || [];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <BarChart3 className="h-8 w-8 text-primary-600" />
-        <h1 className="text-3xl font-bold text-slate-900">Property Market Analysis</h1>
+    <div className="mx-auto max-w-7xl space-y-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <BarChart3 className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Property Market Analysis</h1>
+            <p className="text-muted-foreground">Explore trends, filter segments, and run what-if scenarios.</p>
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Avg Price"
-          value={statsLoading ? '...' : formatCurrency(stats?.averagePrice || 0)}
+          title="Average Price"
+          value={statsLoading ? undefined : formatCurrency(stats?.averagePrice || 0)}
           icon={TrendingUp}
         />
         <KpiCard
           title="Median Price"
-          value={statsLoading ? '...' : formatCurrency(stats?.medianPrice || 0)}
+          value={statsLoading ? undefined : formatCurrency(stats?.medianPrice || 0)}
           icon={BarChart3}
         />
         <KpiCard
           title="Properties"
-          value={statsLoading ? '...' : String(stats?.count || 0)}
-          icon={Filter}
+          value={statsLoading ? undefined : String(stats?.count || 0)}
+          icon={Layers}
         />
         <KpiCard
           title="Avg School Rating"
-          value={statsLoading ? '...' : formatNumber(stats?.averageSchoolRating || 0)}
-          icon={Calculator}
+          value={statsLoading ? undefined : formatNumber(stats?.averageSchoolRating || 0)}
+          icon={Star}
         />
       </div>
 
       {/* Charts */}
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Average Price by Bedrooms</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Average Price by Bedrooms
+            </CardTitle>
+            <CardDescription>How price changes with bedroom count.</CardDescription>
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bedroomData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(v) => `$${v / 1000}k`} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={(v) => `$${v / 1000}k`} tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Bar dataKey="avgPrice" fill="#3b82f6" />
+                <Bar dataKey="avgPrice" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -146,16 +189,29 @@ export default function MarketPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Price vs Square Footage</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5 text-primary" />
+              Price vs Square Footage
+            </CardTitle>
+            <CardDescription>Property size plotted against sale price.</CardDescription>
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" dataKey="squareFootage" name="Sqft" />
-                <YAxis type="number" dataKey="price" name="Price" tickFormatter={(v) => `$${v / 1000}k`} />
+                <XAxis type="number" dataKey="squareFootage" name="Sqft" tick={{ fontSize: 12 }} />
+                <YAxis
+                  type="number"
+                  dataKey="price"
+                  name="Price"
+                  tickFormatter={(v) => `$${v / 1000}k`}
+                  tick={{ fontSize: 12 }}
+                />
                 <ZAxis type="number" dataKey="schoolRating" range={[50, 400]} />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(v: number, n: string) => [n === 'price' ? formatCurrency(v) : v, n]} />
+                <Tooltip
+                  cursor={{ strokeDasharray: '3 3' }}
+                  formatter={(v: number, n: string) => [n === 'price' ? formatCurrency(v) : v, n]}
+                />
                 <Legend />
                 <Scatter name="Properties" data={records || []} fill="#10b981" />
               </ScatterChart>
@@ -168,38 +224,89 @@ export default function MarketPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+            <Filter className="h-5 w-5 text-primary" />
             Filters
           </CardTitle>
+          <CardDescription>Narrow the dataset to a specific market segment.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Input label="Min Beds" type="number" step="0.5" value={filters.minBedrooms ?? ''} onChange={(e) => updateFilter('minBedrooms', e.target.valueAsNumber)} />
-            <Input label="Max Beds" type="number" step="0.5" value={filters.maxBedrooms ?? ''} onChange={(e) => updateFilter('maxBedrooms', e.target.valueAsNumber)} />
-            <Input label="Min Baths" type="number" step="0.5" value={filters.minBathrooms ?? ''} onChange={(e) => updateFilter('minBathrooms', e.target.valueAsNumber)} />
-            <Input label="Max Baths" type="number" step="0.5" value={filters.maxBathrooms ?? ''} onChange={(e) => updateFilter('maxBathrooms', e.target.valueAsNumber)} />
-            <Input label="Min Year" type="number" value={filters.minYearBuilt ?? ''} onChange={(e) => updateFilter('minYearBuilt', e.target.valueAsNumber)} />
-            <Input label="Max Year" type="number" value={filters.maxYearBuilt ?? ''} onChange={(e) => updateFilter('maxYearBuilt', e.target.valueAsNumber)} />
-            <Select
-              label="Sort By"
-              value={filters.sortBy || 'price'}
-              onChange={(e) => updateFilter('sortBy', e.target.value)}
-              options={[
-                { value: 'price', label: 'Price' },
-                { value: 'squareFootage', label: 'Square Footage' },
-                { value: 'yearBuilt', label: 'Year Built' },
-                { value: 'schoolRating', label: 'School Rating' },
-              ]}
-            />
-            <Select
-              label="Direction"
-              value={filters.sortDirection || 'desc'}
-              onChange={(e) => updateFilter('sortDirection', e.target.value as 'asc' | 'desc')}
-              options={[
-                { value: 'asc', label: 'Ascending' },
-                { value: 'desc', label: 'Descending' },
-              ]}
-            />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FormField label="Min Bedrooms">
+              <Input
+                type="number"
+                step="0.5"
+                value={filters.minBedrooms ?? ''}
+                onChange={(e) => updateFilter('minBedrooms', e.target.valueAsNumber)}
+              />
+            </FormField>
+            <FormField label="Max Bedrooms">
+              <Input
+                type="number"
+                step="0.5"
+                value={filters.maxBedrooms ?? ''}
+                onChange={(e) => updateFilter('maxBedrooms', e.target.valueAsNumber)}
+              />
+            </FormField>
+            <FormField label="Min Bathrooms">
+              <Input
+                type="number"
+                step="0.5"
+                value={filters.minBathrooms ?? ''}
+                onChange={(e) => updateFilter('minBathrooms', e.target.valueAsNumber)}
+              />
+            </FormField>
+            <FormField label="Max Bathrooms">
+              <Input
+                type="number"
+                step="0.5"
+                value={filters.maxBathrooms ?? ''}
+                onChange={(e) => updateFilter('maxBathrooms', e.target.valueAsNumber)}
+              />
+            </FormField>
+            <FormField label="Min Year">
+              <Input
+                type="number"
+                value={filters.minYearBuilt ?? ''}
+                onChange={(e) => updateFilter('minYearBuilt', e.target.valueAsNumber)}
+              />
+            </FormField>
+            <FormField label="Max Year">
+              <Input
+                type="number"
+                value={filters.maxYearBuilt ?? ''}
+                onChange={(e) => updateFilter('maxYearBuilt', e.target.valueAsNumber)}
+              />
+            </FormField>
+            <FormField label="Sort By">
+              <Select
+                value={filters.sortBy || 'price'}
+                onValueChange={(value) => updateFilter('sortBy', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="squareFootage">Square Footage</SelectItem>
+                  <SelectItem value="yearBuilt">Year Built</SelectItem>
+                  <SelectItem value="schoolRating">School Rating</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField label="Direction">
+              <Select
+                value={filters.sortDirection || 'desc'}
+                onValueChange={(value) => updateFilter('sortDirection', value as 'asc' | 'desc')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">Ascending</SelectItem>
+                  <SelectItem value="desc">Descending</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
           </div>
         </CardContent>
       </Card>
@@ -208,35 +315,88 @@ export default function MarketPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
+            <Calculator className="h-5 w-5 text-primary" />
             What-If Analysis
           </CardTitle>
+          <CardDescription>Tweak a hypothetical property and see its predicted price.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <Input label="Sqft" type="number" value={whatIf.square_footage} onChange={(e) => setWhatIf({ ...whatIf, square_footage: e.target.valueAsNumber })} />
-            <Input label="Beds" type="number" step="0.5" value={whatIf.bedrooms} onChange={(e) => setWhatIf({ ...whatIf, bedrooms: e.target.valueAsNumber })} />
-            <Input label="Baths" type="number" step="0.5" value={whatIf.bathrooms} onChange={(e) => setWhatIf({ ...whatIf, bathrooms: e.target.valueAsNumber })} />
-            <Input label="Year" type="number" value={whatIf.year_built} onChange={(e) => setWhatIf({ ...whatIf, year_built: e.target.valueAsNumber })} />
-            <Input label="Lot" type="number" value={whatIf.lot_size} onChange={(e) => setWhatIf({ ...whatIf, lot_size: e.target.valueAsNumber })} />
-            <Input label="Distance" type="number" step="0.1" value={whatIf.distance_to_city_center} onChange={(e) => setWhatIf({ ...whatIf, distance_to_city_center: e.target.valueAsNumber })} />
-            <Input label="School" type="number" step="0.1" value={whatIf.school_rating} onChange={(e) => setWhatIf({ ...whatIf, school_rating: e.target.valueAsNumber })} />
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FormField label="Square Footage">
+              <Input
+                type="number"
+                value={whatIf.square_footage}
+                onChange={(e) => setWhatIf({ ...whatIf, square_footage: e.target.valueAsNumber })}
+              />
+            </FormField>
+            <FormField label="Bedrooms">
+              <Input
+                type="number"
+                step="0.5"
+                value={whatIf.bedrooms}
+                onChange={(e) => setWhatIf({ ...whatIf, bedrooms: e.target.valueAsNumber })}
+              />
+            </FormField>
+            <FormField label="Bathrooms">
+              <Input
+                type="number"
+                step="0.5"
+                value={whatIf.bathrooms}
+                onChange={(e) => setWhatIf({ ...whatIf, bathrooms: e.target.valueAsNumber })}
+              />
+            </FormField>
+            <FormField label="Year Built">
+              <Input
+                type="number"
+                value={whatIf.year_built}
+                onChange={(e) => setWhatIf({ ...whatIf, year_built: e.target.valueAsNumber })}
+              />
+            </FormField>
+            <FormField label="Lot Size">
+              <Input
+                type="number"
+                value={whatIf.lot_size}
+                onChange={(e) => setWhatIf({ ...whatIf, lot_size: e.target.valueAsNumber })}
+              />
+            </FormField>
+            <FormField label="Distance to Center">
+              <Input
+                type="number"
+                step="0.1"
+                value={whatIf.distance_to_city_center}
+                onChange={(e) =>
+                  setWhatIf({ ...whatIf, distance_to_city_center: e.target.valueAsNumber })
+                }
+              />
+            </FormField>
+            <FormField label="School Rating">
+              <Input
+                type="number"
+                step="0.1"
+                value={whatIf.school_rating}
+                onChange={(e) => setWhatIf({ ...whatIf, school_rating: e.target.valueAsNumber })}
+              />
+            </FormField>
           </div>
           <Button onClick={runWhatIfAnalysis} disabled={whatIfLoading}>
+            <Calculator className="mr-2 h-4 w-4" />
             {whatIfLoading ? 'Running...' : 'Run Prediction'}
           </Button>
+
           {whatIfResult && (
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-6 bg-primary-50 rounded-lg">
-                <p className="text-sm text-slate-600">Predicted Price</p>
-                <p className="text-3xl font-bold text-primary-700">{formatCurrency(whatIfResult.predictedPrice)}</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl bg-primary/5 p-6">
+                <p className="text-sm font-medium text-muted-foreground">Predicted Price</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-primary">
+                  {formatCurrency(whatIfResult.predictedPrice)}
+                </p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Comparable Properties</p>
-                <div className="space-y-2">
+              <div className="rounded-xl border p-5">
+                <p className="text-sm font-semibold">Comparable Properties</p>
+                <div className="mt-3 space-y-2">
                   {whatIfResult.comparables.slice(0, 3).map((c) => (
                     <div key={c.id} className="flex justify-between text-sm">
-                      <span>{c.square_footage} sqft, {c.bedrooms} beds</span>
+                      <span className="text-muted-foreground">{c.square_footage} sqft, {c.bedrooms} beds</span>
                       <span className="font-medium">{formatCurrency(c.price)}</span>
                     </div>
                   ))}
@@ -249,59 +409,71 @@ export default function MarketPage() {
 
       {/* Data table with exports */}
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <CardTitle>Market Data</CardTitle>
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Market Data
+            </CardTitle>
+            <CardDescription>Browse and export filtered property records.</CardDescription>
+          </div>
           <div className="flex gap-2">
-            <a href="/api/market/export/csv" download>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-1" />
+            <Button variant="outline" size="sm" asChild>
+              <a href="/api/market/export/csv" download>
+                <Download className="mr-2 h-4 w-4" />
                 CSV
-              </Button>
-            </a>
-            <a href="/api/market/export/pdf" download>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-1" />
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/api/market/export/pdf" download>
+                <Download className="mr-2 h-4 w-4" />
                 PDF
-              </Button>
-            </a>
+              </a>
+            </Button>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent>
           {recordsLoading ? (
-            <p className="text-slate-500">Loading records...</p>
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Sqft</th>
-                  <th className="px-4 py-2 text-left">Beds</th>
-                  <th className="px-4 py-2 text-left">Baths</th>
-                  <th className="px-4 py-2 text-left">Year</th>
-                  <th className="px-4 py-2 text-left">Lot</th>
-                  <th className="px-4 py-2 text-left">Dist</th>
-                  <th className="px-4 py-2 text-left">School</th>
-                  <th className="px-4 py-2 text-right">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records?.map((record) => (
-                  <tr key={record.id} className="border-t border-slate-100">
-                    <td className="px-4 py-2">{record.id}</td>
-                    <td className="px-4 py-2">{record.square_footage}</td>
-                    <td className="px-4 py-2">{record.bedrooms}</td>
-                    <td className="px-4 py-2">{record.bathrooms}</td>
-                    <td className="px-4 py-2">{record.year_built}</td>
-                    <td className="px-4 py-2">{record.lot_size}</td>
-                    <td className="px-4 py-2">{record.distance_to_city_center}</td>
-                    <td className="px-4 py-2">{record.school_rating}</td>
-                    <td className="px-4 py-2 text-right">
-                      <Badge>{formatCurrency(record.price)}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Sqft</TableHead>
+                    <TableHead>Beds</TableHead>
+                    <TableHead>Baths</TableHead>
+                    <TableHead>Year</TableHead>
+                    <TableHead>Lot</TableHead>
+                    <TableHead>Dist</TableHead>
+                    <TableHead>School</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {records?.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>{record.id}</TableCell>
+                      <TableCell>{record.square_footage}</TableCell>
+                      <TableCell>{record.bedrooms}</TableCell>
+                      <TableCell>{record.bathrooms}</TableCell>
+                      <TableCell>{record.year_built}</TableCell>
+                      <TableCell>{record.lot_size}</TableCell>
+                      <TableCell>{record.distance_to_city_center}</TableCell>
+                      <TableCell>{record.school_rating}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="secondary">{formatCurrency(record.price)}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -309,18 +481,39 @@ export default function MarketPage() {
   );
 }
 
-function KpiCard({ title, value, icon: Icon }: { title: string; value: string; icon: React.ElementType }) {
+function KpiCard({
+  title,
+  value,
+  icon: Icon,
+}: {
+  title: string;
+  value: string | undefined;
+  icon: React.ElementType;
+}) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4 py-6">
-        <div className="p-3 bg-primary-50 rounded-lg">
-          <Icon className="h-6 w-6 text-primary-600" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+          <Icon className="h-6 w-6 text-primary" />
         </div>
-        <div>
-          <p className="text-sm text-slate-600">{title}</p>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          {value === undefined ? (
+            <Skeleton className="mt-1 h-7 w-24" />
+          ) : (
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">{value}</p>
+          )}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</Label>
+      {children}
+    </div>
   );
 }
