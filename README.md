@@ -151,7 +151,7 @@ A local git repository is already initialized with two commits. To publish:
 1. Create a public repository named `fullstack-property-portal` on GitHub.
 2. Update the remote URL if your username differs:
    ```bash
-   git remote set-url origin https://github.com/YOUR_USERNAME/fullstack-property-portal.git
+   git remote set-url origin https://github.com/wioDz/fullstack-property-portal.git
    ```
 3. Push:
    ```bash
