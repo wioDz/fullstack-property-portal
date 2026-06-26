@@ -4,6 +4,7 @@ Forwards requests to ML Service with all 7 features.
 """
 
 import os
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import List
@@ -69,6 +70,8 @@ class CompareResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     ml_service_reachable: bool
+    uptime_seconds: float
+    ml_service_response_time_ms: float | None = None
 
 
 class HistoryStore:
@@ -92,6 +95,7 @@ class HistoryStore:
 
 
 history_store = HistoryStore()
+START_TIME = time.monotonic()
 
 
 @asynccontextmanager
@@ -148,14 +152,22 @@ async def _call_ml_predict_batch(
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health():
+    ml_response_time_ms = None
     try:
         async with httpx.AsyncClient(trust_env=False) as client:
+            start = time.monotonic()
             resp = await client.get(f"{ML_SERVICE_URL}/health", timeout=5.0)
+            ml_response_time_ms = round((time.monotonic() - start) * 1000, 2)
         ml_reachable = resp.status_code == status.HTTP_200_OK
     except Exception:
         ml_reachable = False
 
-    return HealthResponse(status="healthy", ml_service_reachable=ml_reachable)
+    return HealthResponse(
+        status="healthy",
+        ml_service_reachable=ml_reachable,
+        uptime_seconds=round(time.monotonic() - START_TIME, 3),
+        ml_service_response_time_ms=ml_response_time_ms,
+    )
 
 
 @app.post(

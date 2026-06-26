@@ -10,6 +10,7 @@ Endpoints:
 
 import json
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List
@@ -76,6 +77,7 @@ class HealthResponse(BaseModel):
 
     status: str
     model_loaded: bool
+    uptime_seconds: float
 
 
 class ModelState:
@@ -157,6 +159,7 @@ class ModelState:
 
 
 model_state = ModelState()
+START_TIME = time.monotonic()
 
 
 @asynccontextmanager
@@ -177,7 +180,11 @@ app = FastAPI(
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health():
     """Return service health status."""
-    return HealthResponse(status="healthy", model_loaded=model_state.loaded)
+    return HealthResponse(
+        status="healthy",
+        model_loaded=model_state.loaded,
+        uptime_seconds=round(time.monotonic() - START_TIME, 3),
+    )
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Predictions"])
