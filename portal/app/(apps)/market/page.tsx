@@ -143,13 +143,34 @@ export default function MarketPage() {
     return Number.isNaN(parsed) ? fallback : parsed;
   };
 
-  const recordValue = (
-    record: HouseRecord,
-    snakeKey: keyof HouseRecord,
-    camelKey: string
-  ): number => {
-    const values = record as unknown as Record<string, number>;
-    return values[camelKey] ?? values[snakeKey as string] ?? 0;
+  const recordValue = (record: HouseRecord, ...keys: string[]): number | null => {
+    const values = record as unknown as Record<string, unknown>;
+    for (const key of keys) {
+      const value = values[key];
+      const numberValue = typeof value === 'number' ? value : Number(value);
+      if (Number.isFinite(numberValue)) {
+        return numberValue;
+      }
+    }
+    return null;
+  };
+
+  const formatRecordValue = (record: HouseRecord, ...keys: string[]): string => {
+    const value = recordValue(record, ...keys);
+    return value === null ? '-' : formatNumber(value);
+  };
+
+  const comparableColumns = (rows: HouseRecord[]) => {
+    return [
+      { label: 'Sqft', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'squareFootage', 'square_footage'), hasValue: (row: HouseRecord) => recordValue(row, 'squareFootage', 'square_footage') !== null },
+      { label: 'Beds', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'bedrooms'), hasValue: (row: HouseRecord) => recordValue(row, 'bedrooms') !== null },
+      { label: 'Baths', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'bathrooms'), hasValue: (row: HouseRecord) => recordValue(row, 'bathrooms') !== null },
+      { label: 'Year', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'yearBuilt', 'year_built'), hasValue: (row: HouseRecord) => recordValue(row, 'yearBuilt', 'year_built') !== null },
+      { label: 'Lot', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'lotSize', 'lot_size'), hasValue: (row: HouseRecord) => recordValue(row, 'lotSize', 'lot_size') !== null },
+      { label: 'Dist', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'distanceToCityCenter', 'distance_to_city_center'), hasValue: (row: HouseRecord) => recordValue(row, 'distanceToCityCenter', 'distance_to_city_center') !== null },
+      { label: 'School', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'schoolRating', 'school_rating'), hasValue: (row: HouseRecord) => recordValue(row, 'schoolRating', 'school_rating') !== null },
+      { label: 'Price', align: 'text-right', render: (row: HouseRecord) => formatCurrency(recordValue(row, 'price') ?? 0), hasValue: (row: HouseRecord) => recordValue(row, 'price') !== null },
+    ].filter((column) => rows.some(column.hasValue));
   };
 
   const bedroomData =
@@ -460,36 +481,38 @@ export default function MarketPage() {
                   <Badge variant="secondary">{whatIfResult.comparables.length} matches</Badge>
                 </div>
                 <div className="mt-3 overflow-x-auto rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Sqft</TableHead>
-                        <TableHead>Beds</TableHead>
-                        <TableHead>Baths</TableHead>
-                        <TableHead>Year</TableHead>
-                        <TableHead>Lot</TableHead>
-                        <TableHead>Dist</TableHead>
-                        <TableHead>School</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {whatIfResult.comparables.slice(0, 5).map((c) => (
-                        <TableRow key={c.id}>
-                          <TableCell>{formatNumber(recordValue(c, 'square_footage', 'squareFootage'))}</TableCell>
-                          <TableCell>{c.bedrooms}</TableCell>
-                          <TableCell>{c.bathrooms}</TableCell>
-                          <TableCell>{recordValue(c, 'year_built', 'yearBuilt')}</TableCell>
-                          <TableCell>{formatNumber(recordValue(c, 'lot_size', 'lotSize'))}</TableCell>
-                          <TableCell>{recordValue(c, 'distance_to_city_center', 'distanceToCityCenter')}</TableCell>
-                          <TableCell>{recordValue(c, 'school_rating', 'schoolRating')}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(c.price)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {(() => {
+                    const rows = whatIfResult.comparables.slice(0, 5);
+                    const columns = comparableColumns(rows);
+
+                    return (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            {columns.map((column) => (
+                              <TableHead key={column.label} className={column.align}>
+                                {column.label}
+                              </TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rows.map((row) => (
+                            <TableRow key={row.id}>
+                              {columns.map((column) => (
+                                <TableCell
+                                  key={column.label}
+                                  className={column.label === 'Price' ? 'text-right font-medium' : column.align}
+                                >
+                                  {column.render(row)}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -547,15 +570,15 @@ export default function MarketPage() {
                 </TableHeader>
                 <TableBody>
                   {records?.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{record.id}</TableCell>
-                      <TableCell>{recordValue(record, 'square_footage', 'squareFootage')}</TableCell>
+                      <TableRow key={record.id}>
+                        <TableCell>{record.id}</TableCell>
+                      <TableCell>{formatRecordValue(record, 'squareFootage', 'square_footage')}</TableCell>
                       <TableCell>{record.bedrooms}</TableCell>
                       <TableCell>{record.bathrooms}</TableCell>
-                      <TableCell>{recordValue(record, 'year_built', 'yearBuilt')}</TableCell>
-                      <TableCell>{recordValue(record, 'lot_size', 'lotSize')}</TableCell>
-                      <TableCell>{recordValue(record, 'distance_to_city_center', 'distanceToCityCenter')}</TableCell>
-                      <TableCell>{recordValue(record, 'school_rating', 'schoolRating')}</TableCell>
+                      <TableCell>{formatRecordValue(record, 'yearBuilt', 'year_built')}</TableCell>
+                      <TableCell>{formatRecordValue(record, 'lotSize', 'lot_size')}</TableCell>
+                      <TableCell>{formatRecordValue(record, 'distanceToCityCenter', 'distance_to_city_center')}</TableCell>
+                      <TableCell>{formatRecordValue(record, 'schoolRating', 'school_rating')}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant="secondary">{formatCurrency(record.price)}</Badge>
                       </TableCell>
