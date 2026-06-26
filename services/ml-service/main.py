@@ -149,6 +149,9 @@ class ModelState:
         )
         premium = self.premium_model.predict(self.scaler.transform(premium_features))[0]
         raw_prediction = base + premium
+
+        # Linear extrapolation can undershoot for very small homes. Keep those
+        # predictions realistic by flooring them at the lowest observed $/sqft.
         min_price_per_sqft = float(self.metadata.get("min_price_per_sqft", 0.0))
         fallback_floor = features.square_footage * min_price_per_sqft
         return float(max(0.0, fallback_floor, round(raw_prediction, 2)))
@@ -159,6 +162,7 @@ class ModelState:
 
 
 model_state = ModelState()
+# Monotonic clock is used for uptime so wall-clock changes do not skew health checks.
 START_TIME = time.monotonic()
 
 

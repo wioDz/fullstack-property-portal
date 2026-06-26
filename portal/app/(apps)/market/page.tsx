@@ -143,6 +143,10 @@ export default function MarketPage() {
     return Number.isNaN(parsed) ? fallback : parsed;
   };
 
+  /**
+   * Java serializes HouseRecord fields as camelCase, while the ML/Python paths
+   * use snake_case. Try both so tables render real values instead of NaN.
+   */
   const recordValue = (record: HouseRecord, ...keys: string[]): number | null => {
     const values = record as unknown as Record<string, unknown>;
     for (const key of keys) {
@@ -160,16 +164,60 @@ export default function MarketPage() {
     return value === null ? '-' : formatNumber(value);
   };
 
+  /**
+   * Hide comparable-property columns that have no data in the current result.
+   * This keeps the comparison table compact without losing useful fields.
+   */
   const comparableColumns = (rows: HouseRecord[]) => {
     return [
-      { label: 'Sqft', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'squareFootage', 'square_footage'), hasValue: (row: HouseRecord) => recordValue(row, 'squareFootage', 'square_footage') !== null },
-      { label: 'Beds', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'bedrooms'), hasValue: (row: HouseRecord) => recordValue(row, 'bedrooms') !== null },
-      { label: 'Baths', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'bathrooms'), hasValue: (row: HouseRecord) => recordValue(row, 'bathrooms') !== null },
-      { label: 'Year', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'yearBuilt', 'year_built'), hasValue: (row: HouseRecord) => recordValue(row, 'yearBuilt', 'year_built') !== null },
-      { label: 'Lot', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'lotSize', 'lot_size'), hasValue: (row: HouseRecord) => recordValue(row, 'lotSize', 'lot_size') !== null },
-      { label: 'Dist', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'distanceToCityCenter', 'distance_to_city_center'), hasValue: (row: HouseRecord) => recordValue(row, 'distanceToCityCenter', 'distance_to_city_center') !== null },
-      { label: 'School', align: '', render: (row: HouseRecord) => formatRecordValue(row, 'schoolRating', 'school_rating'), hasValue: (row: HouseRecord) => recordValue(row, 'schoolRating', 'school_rating') !== null },
-      { label: 'Price', align: 'text-right', render: (row: HouseRecord) => formatCurrency(recordValue(row, 'price') ?? 0), hasValue: (row: HouseRecord) => recordValue(row, 'price') !== null },
+      {
+        label: 'Sqft',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'squareFootage', 'square_footage'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'squareFootage', 'square_footage') !== null,
+      },
+      {
+        label: 'Beds',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'bedrooms'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'bedrooms') !== null,
+      },
+      {
+        label: 'Baths',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'bathrooms'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'bathrooms') !== null,
+      },
+      {
+        label: 'Year',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'yearBuilt', 'year_built'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'yearBuilt', 'year_built') !== null,
+      },
+      {
+        label: 'Lot',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'lotSize', 'lot_size'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'lotSize', 'lot_size') !== null,
+      },
+      {
+        label: 'Dist',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'distanceToCityCenter', 'distance_to_city_center'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'distanceToCityCenter', 'distance_to_city_center') !== null,
+      },
+      {
+        label: 'School',
+        align: '',
+        render: (row: HouseRecord) => formatRecordValue(row, 'schoolRating', 'school_rating'),
+        hasValue: (row: HouseRecord) => recordValue(row, 'schoolRating', 'school_rating') !== null,
+      },
+      {
+        label: 'Price',
+        align: 'text-right',
+        render: (row: HouseRecord) => formatCurrency(recordValue(row, 'price') ?? 0),
+        hasValue: (row: HouseRecord) => recordValue(row, 'price') !== null,
+      },
     ].filter((column) => rows.some(column.hasValue));
   };
 

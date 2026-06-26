@@ -95,6 +95,7 @@ class HistoryStore:
 
 
 history_store = HistoryStore()
+# Monotonic clock keeps uptime stable even if the host clock is adjusted.
 START_TIME = time.monotonic()
 
 
@@ -155,6 +156,8 @@ async def health():
     ml_response_time_ms = None
     try:
         async with httpx.AsyncClient(trust_env=False) as client:
+            # Report downstream latency so callers can see how long health waited
+            # for the ML service to respond.
             start = time.monotonic()
             resp = await client.get(f"{ML_SERVICE_URL}/health", timeout=5.0)
             ml_response_time_ms = round((time.monotonic() - start) * 1000, 2)

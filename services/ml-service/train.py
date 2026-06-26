@@ -109,6 +109,9 @@ def train_two_layer_model(df: pd.DataFrame):
     # Metrics
     y_true = test_df[TARGET_COLUMN].values
     y_pred = test_df["predicted_price"].values
+
+    # Store a conservative floor for inference-time extrapolation below the
+    # training size range, which prevents tiny homes from showing as $0.
     min_price_per_sqft = float(
         (df[TARGET_COLUMN] / df["square_footage"]).replace([np.inf, -np.inf], np.nan).dropna().min()
     )
