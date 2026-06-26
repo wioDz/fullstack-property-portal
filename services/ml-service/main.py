@@ -146,7 +146,10 @@ class ModelState:
             dtype=float,
         )
         premium = self.premium_model.predict(self.scaler.transform(premium_features))[0]
-        return float(max(0.0, round(base + premium, 2)))
+        raw_prediction = base + premium
+        min_price_per_sqft = float(self.metadata.get("min_price_per_sqft", 0.0))
+        fallback_floor = features.square_footage * min_price_per_sqft
+        return float(max(0.0, fallback_floor, round(raw_prediction, 2)))
 
     def predict_many(self, items: List[HouseFeatures]) -> List[float]:
         """Predict non-negative prices for multiple input rows."""

@@ -109,6 +109,9 @@ def train_two_layer_model(df: pd.DataFrame):
     # Metrics
     y_true = test_df[TARGET_COLUMN].values
     y_pred = test_df["predicted_price"].values
+    min_price_per_sqft = float(
+        (df[TARGET_COLUMN] / df["square_footage"]).replace([np.inf, -np.inf], np.nan).dropna().min()
+    )
 
     metadata = {
         "model_type": "TwoLayerMonotonicModel",
@@ -122,6 +125,7 @@ def train_two_layer_model(df: pd.DataFrame):
         "premium_intercept": float(premium_model.intercept_),
         "premium_features": PREMIUM_FEATURES,
         "prediction_floor": 0.0,
+        "min_price_per_sqft": min_price_per_sqft,
         "monotonic_features": ["square_footage"],
         "metrics": {
             "r2": float(r2_score(y_true, y_pred)),

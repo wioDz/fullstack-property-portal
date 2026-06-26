@@ -65,7 +65,7 @@ class ModelBehaviorTest(unittest.TestCase):
             "distance_to_city_center": 4.0,
             "school_rating": 8.0,
         }
-        square_footages = [250, 500, 1000, 1500, 2000, 2500, 3000]
+        square_footages = [200, 250, 500, 1000, 1500, 2000, 2500, 3000]
 
         with TestClient(main.app) as client:
             prices = [
@@ -77,6 +77,7 @@ class ModelBehaviorTest(unittest.TestCase):
             ]
 
         self.assertTrue(all(price >= 0 for price in prices), prices)
+        self.assertGreater(prices[0], 0, prices)
         self.assertEqual(prices, sorted(prices), prices)
 
 

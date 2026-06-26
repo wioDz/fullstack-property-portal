@@ -143,6 +143,15 @@ export default function MarketPage() {
     return Number.isNaN(parsed) ? fallback : parsed;
   };
 
+  const recordValue = (
+    record: HouseRecord,
+    snakeKey: keyof HouseRecord,
+    camelKey: string
+  ): number => {
+    const values = record as unknown as Record<string, number>;
+    return values[camelKey] ?? values[snakeKey as string] ?? 0;
+  };
+
   const bedroomData =
     records?.reduce((acc, r) => {
       const key = `${r.bedrooms} bed`;
@@ -446,14 +455,41 @@ export default function MarketPage() {
                 </p>
               </div>
               <div className="rounded-xl border p-5">
-                <p className="text-sm font-semibold">Comparable Properties</p>
-                <div className="mt-3 space-y-2">
-                  {whatIfResult.comparables.slice(0, 3).map((c) => (
-                    <div key={c.id} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{c.square_footage} sqft, {c.bedrooms} beds</span>
-                      <span className="font-medium">{formatCurrency(c.price)}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold">Comparable Properties</p>
+                  <Badge variant="secondary">{whatIfResult.comparables.length} matches</Badge>
+                </div>
+                <div className="mt-3 overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sqft</TableHead>
+                        <TableHead>Beds</TableHead>
+                        <TableHead>Baths</TableHead>
+                        <TableHead>Year</TableHead>
+                        <TableHead>Lot</TableHead>
+                        <TableHead>Dist</TableHead>
+                        <TableHead>School</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {whatIfResult.comparables.slice(0, 5).map((c) => (
+                        <TableRow key={c.id}>
+                          <TableCell>{formatNumber(recordValue(c, 'square_footage', 'squareFootage'))}</TableCell>
+                          <TableCell>{c.bedrooms}</TableCell>
+                          <TableCell>{c.bathrooms}</TableCell>
+                          <TableCell>{recordValue(c, 'year_built', 'yearBuilt')}</TableCell>
+                          <TableCell>{formatNumber(recordValue(c, 'lot_size', 'lotSize'))}</TableCell>
+                          <TableCell>{recordValue(c, 'distance_to_city_center', 'distanceToCityCenter')}</TableCell>
+                          <TableCell>{recordValue(c, 'school_rating', 'schoolRating')}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(c.price)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </div>
@@ -513,13 +549,13 @@ export default function MarketPage() {
                   {records?.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>{record.id}</TableCell>
-                      <TableCell>{record.square_footage}</TableCell>
+                      <TableCell>{recordValue(record, 'square_footage', 'squareFootage')}</TableCell>
                       <TableCell>{record.bedrooms}</TableCell>
                       <TableCell>{record.bathrooms}</TableCell>
-                      <TableCell>{record.year_built}</TableCell>
-                      <TableCell>{record.lot_size}</TableCell>
-                      <TableCell>{record.distance_to_city_center}</TableCell>
-                      <TableCell>{record.school_rating}</TableCell>
+                      <TableCell>{recordValue(record, 'year_built', 'yearBuilt')}</TableCell>
+                      <TableCell>{recordValue(record, 'lot_size', 'lotSize')}</TableCell>
+                      <TableCell>{recordValue(record, 'distance_to_city_center', 'distanceToCityCenter')}</TableCell>
+                      <TableCell>{recordValue(record, 'school_rating', 'schoolRating')}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant="secondary">{formatCurrency(record.price)}</Badge>
                       </TableCell>
