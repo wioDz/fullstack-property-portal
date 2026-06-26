@@ -32,4 +32,4 @@ EXPOSE 8001
 # At container start, train the model if artifacts are missing, then start Uvicorn.
 # We use a single worker because the model is loaded in memory and shared state
 # is simpler for this interview demo.
-CMD sh -c "if [ ! -f /app/models/model.pkl ]; then python train.py; fi && uvicorn main:app --host 0.0.0.0 --port 8001"
+CMD sh -c "if [ ! -f /app/models/base_model.pkl ] || [ ! -f /app/models/premium_model.pkl ]; then python train.py; fi && uvicorn main:app --host 0.0.0.0 --port 8001"

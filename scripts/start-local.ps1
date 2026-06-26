@@ -9,7 +9,7 @@ Start-Process powershell -ArgumentList @"
 cd '$root\services\ml-service'
 if (-not (Test-Path .venv)) { python -m venv .venv }
 .venv\Scripts\activate
-if (-not (Test-Path models\model.pkl)) { python train.py }
+if (-not (Test-Path models\base_model.pkl) -or -not (Test-Path models\premium_model.pkl)) { python train.py }
 uvicorn main:app --host 0.0.0.0 --port 8001
 "@
 

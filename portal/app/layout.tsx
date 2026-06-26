@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className={inter.className}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <Providers>
           <Navbar />
           <main className="min-h-screen bg-muted/30">

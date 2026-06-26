@@ -160,7 +160,7 @@ A local git repository is already initialized with two commits. To publish:
 
 ## Notes
 
-- The ML model is trained at container startup if `model.pkl` is not present in the mounted model volume.
+- The ML model is trained at container startup if `base_model.pkl` or `premium_model.pkl` is not present in the mounted model volume.
 - The Java backend caches market statistics with Caffeine.
 - The Next.js portal proxies client requests to the Python and Java backends via `/api/*` routes.
 - Explanatory comments are included throughout the source code.

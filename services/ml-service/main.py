@@ -20,11 +20,6 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 
-# ---------------------------------------------------------------------------
-# Feature schema constants
-# ---------------------------------------------------------------------------
-
-# These names define the expected input order and are stored in metadata.json.
 FEATURE_NAMES = [
     "square_footage",
     "bedrooms",
@@ -35,10 +30,15 @@ FEATURE_NAMES = [
     "school_rating",
 ]
 
+PREMIUM_FEATURE_NAMES = [
+    "lot_size",
+    "bedrooms",
+    "bathrooms",
+    "year_built",
+    "distance_to_city_center",
+    "school_rating",
+]
 
-# ---------------------------------------------------------------------------
-# Pydantic request/response models
-# ---------------------------------------------------------------------------
 
 class HouseFeatures(BaseModel):
     """Input features for a single house price prediction."""
@@ -71,18 +71,6 @@ class BatchPredictionResponse(BaseModel):
     count: int
 
 
-class ModelInfoResponse(BaseModel):
-    """Model metadata including performance metrics and coefficients."""
-
-    model_type: str
-    feature_names: List[str]
-    metrics: dict
-    coefficients: List[float]
-    intercept: float
-    training_samples: int
-    test_samples: int
-
-
 class HealthResponse(BaseModel):
     """Health check response."""
 
@@ -90,48 +78,81 @@ class HealthResponse(BaseModel):
     model_loaded: bool
 
 
-# ---------------------------------------------------------------------------
-# Model loading
-# ---------------------------------------------------------------------------
-
 class ModelState:
     """
     Holds the loaded model artifacts in memory for the lifetime of the app.
 
-    The three artifacts are:
-      - model.pkl   : fitted scikit-learn LinearRegression model
-      - scaler.pkl  : fitted StandardScaler used to normalize input features
-      - metadata.json : model metrics, coefficients, and training metadata
+    The model is intentionally split into two layers:
+      - base_model.pkl predicts the price contribution from square_footage.
+      - premium_model.pkl predicts a residual adjustment from the other fields.
+
+    Because the residual model does not include square_footage, increasing area
+    while keeping other inputs fixed cannot lower the prediction.
     """
 
     def __init__(self):
-        self.model = None
+        self.base_model = None
+        self.premium_model = None
         self.scaler = None
         self.metadata = None
         self.loaded = False
 
-    def load(self):
-        """Load model.pkl, scaler.pkl, and metadata.json from MODEL_DIR."""
-        model_dir = Path(os.environ.get("MODEL_DIR", "/app/models"))
+    def load(self, model_dir: Path | None = None):
+        """Load base_model.pkl, premium_model.pkl, scaler.pkl, and metadata.json."""
+        model_dir = model_dir or Path(os.environ.get("MODEL_DIR", "/app/models"))
 
-        model_path = model_dir / "model.pkl"
+        base_model_path = model_dir / "base_model.pkl"
+        premium_model_path = model_dir / "premium_model.pkl"
         scaler_path = model_dir / "scaler.pkl"
         metadata_path = model_dir / "metadata.json"
 
-        if not model_path.exists() or not scaler_path.exists() or not metadata_path.exists():
+        missing = [
+            path.name
+            for path in [base_model_path, premium_model_path, scaler_path, metadata_path]
+            if not path.exists()
+        ]
+        if missing:
             raise RuntimeError(
-                f"Model artifacts not found in {model_dir}. "
+                f"Model artifacts missing in {model_dir}: {', '.join(missing)}. "
                 "Run train.py first or mount a volume with trained artifacts."
             )
 
-        self.model = joblib.load(model_path)
+        self.base_model = joblib.load(base_model_path)
+        self.premium_model = joblib.load(premium_model_path)
         self.scaler = joblib.load(scaler_path)
         with open(metadata_path, "r", encoding="utf-8") as f:
             self.metadata = json.load(f)
         self.loaded = True
 
+    def predict_one(self, features: HouseFeatures) -> float:
+        """Predict a non-negative price for one input row."""
+        if not self.loaded:
+            raise RuntimeError("Model is not loaded")
 
-# Global application state.
+        base = self.base_model.predict(
+            np.array([[features.square_footage]], dtype=float)
+        )[0]
+        premium_features = np.array(
+            [
+                [
+                    features.lot_size,
+                    features.bedrooms,
+                    features.bathrooms,
+                    features.year_built,
+                    features.distance_to_city_center,
+                    features.school_rating,
+                ]
+            ],
+            dtype=float,
+        )
+        premium = self.premium_model.predict(self.scaler.transform(premium_features))[0]
+        return float(max(0.0, round(base + premium, 2)))
+
+    def predict_many(self, items: List[HouseFeatures]) -> List[float]:
+        """Predict non-negative prices for multiple input rows."""
+        return [self.predict_one(item) for item in items]
+
+
 model_state = ModelState()
 
 
@@ -140,12 +161,7 @@ async def lifespan(app: FastAPI):
     """Load model artifacts when the application starts."""
     model_state.load()
     yield
-    # Nothing to clean up; the model stays in memory until the process exits.
 
-
-# ---------------------------------------------------------------------------
-# FastAPI app
-# ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Housing Price Prediction API",
@@ -153,21 +169,6 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
-
-
-def _features_to_array(features: HouseFeatures) -> np.ndarray:
-    """Convert a Pydantic HouseFeatures instance into a NumPy array in feature order."""
-    return np.array(
-        [
-            features.square_footage,
-            features.bedrooms,
-            features.bathrooms,
-            features.year_built,
-            features.lot_size,
-            features.distance_to_city_center,
-            features.school_rating,
-        ]
-    ).reshape(1, -1)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
@@ -185,11 +186,7 @@ async def predict(features: HouseFeatures):
             detail="Model is not loaded",
         )
 
-    X = _features_to_array(features)
-    X_scaled = model_state.scaler.transform(X)
-    predicted = model_state.model.predict(X_scaled)[0]
-
-    return PredictionResponse(predicted_price=float(round(predicted, 2)))
+    return PredictionResponse(predicted_price=model_state.predict_one(features))
 
 
 @app.post("/predict/batch", response_model=BatchPredictionResponse, tags=["Predictions"])
@@ -201,18 +198,11 @@ async def predict_batch(request: BatchPredictionRequest):
             detail="Model is not loaded",
         )
 
-    # Stack all input rows into a single 2D array for efficient inference.
-    X = np.vstack([_features_to_array(item) for item in request.items])
-    X_scaled = model_state.scaler.transform(X)
-    predictions = model_state.model.predict(X_scaled)
-
-    return BatchPredictionResponse(
-        predictions=[float(round(p, 2)) for p in predictions],
-        count=len(predictions),
-    )
+    predictions = model_state.predict_many(request.items)
+    return BatchPredictionResponse(predictions=predictions, count=len(predictions))
 
 
-@app.get("/model-info", response_model=ModelInfoResponse, tags=["Model"])
+@app.get("/model-info", tags=["Model"])
 async def model_info():
     """Return model metadata, metrics, and coefficients."""
     if not model_state.loaded:
@@ -221,12 +211,8 @@ async def model_info():
             detail="Model is not loaded",
         )
 
-    return ModelInfoResponse(**model_state.metadata)
+    return model_state.metadata
 
-
-# ---------------------------------------------------------------------------
-# Local development entry point
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn
